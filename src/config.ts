@@ -4,10 +4,18 @@ export type Network = "mainnet" | "devnet";
 
 const env = import.meta.env;
 
+// Accepts a full RPC URL, or just a bare Helius API key (turned into a Helius URL).
+const rpc = (v: string | undefined, cluster: "mainnet" | "devnet", fallback: string) => {
+  const s = (v || "").trim();
+  if (!s) return fallback;
+  if (/^https?:\/\//i.test(s)) return s;
+  return `https://${cluster}.helius-rpc.com/?api-key=${encodeURIComponent(s)}`;
+};
+
 export const RPC_URLS: Record<Network, string> = {
   // Use a paid RPC (Helius, QuickNode, Triton…) for mainnet — the public one rate-limits hard.
-  mainnet: env.VITE_RPC_MAINNET || "https://api.mainnet-beta.solana.com",
-  devnet: env.VITE_RPC_DEVNET || "https://api.devnet.solana.com",
+  mainnet: rpc(env.VITE_RPC_MAINNET, "mainnet", "https://api.mainnet-beta.solana.com"),
+  devnet: rpc(env.VITE_RPC_DEVNET, "devnet", "https://api.devnet.solana.com"),
 };
 
 /** Wallet that receives your platform fees. Leave empty to charge no fee. */
