@@ -25,6 +25,7 @@ export default function Trending() {
   const [tokens, setTokens] = useState<T[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [broken, setBroken] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     let dead = false;
@@ -77,7 +78,16 @@ export default function Trending() {
           : tokens.map((t) => (
               <article key={t.address} className="tcard">
                 <header>
-                  {t.icon ? <img src={t.icon} alt="" loading="lazy" /> : <div className="ph">{t.symbol.slice(0, 2)}</div>}
+                  {t.icon && !broken[t.address] ? (
+                    <img
+                      src={t.icon}
+                      alt=""
+                      loading="lazy"
+                      onError={() => setBroken((b) => ({ ...b, [t.address]: true }))}
+                    />
+                  ) : (
+                    <div className="ph">{t.symbol.slice(0, 2).toUpperCase()}</div>
+                  )}
                   <div>
                     <h4>{t.name}</h4>
                     <span className="mono muted">${t.symbol}</span>

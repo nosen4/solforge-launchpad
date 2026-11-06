@@ -183,9 +183,14 @@ input[type="range"] { padding: 0; accent-color: var(--accent); flex: 1; backgrou
 .ftr { border-top: 1px solid var(--line); padding: 32px 28px; text-align: center; color: var(--muted); font-size: .85rem; line-height: 1.6; }
 .ftr p { max-width: 760px; margin: 0 auto 8px; }
 
-@media (max-width: 720px) {
+@media (max-width: 1000px) {
   .hdr { flex-wrap: wrap; padding: 12px 16px; gap: 10px; }
-  .hdr nav { order: 3; width: 100%; overflow-x: auto; flex-wrap: nowrap; }
+  .hdr .logo { flex: 1; }
+  .hdr nav { order: 3; width: 100%; flex: none; overflow-x: auto; flex-wrap: nowrap; scrollbar-width: none; }
+  .hdr nav::-webkit-scrollbar { display: none; }
+  .hdr nav a { white-space: nowrap; }
+}
+@media (max-width: 720px) {
   .grid2, .grid3, .stats, .howto ol { grid-template-columns: 1fr; }
   .pair { grid-template-columns: 1fr; }
   .plus { text-align: center; }

@@ -44,7 +44,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           address: p.tokenAddress,
           name: pair.baseToken.name,
           symbol: pair.baseToken.symbol,
-          icon: p.icon || pair.info?.imageUrl,
+          // DexScreener's profile "icon" is often a bare image id, not a URL.
+          icon:
+            pair.info?.imageUrl ||
+            (p.icon?.startsWith("http") ? p.icon : null) ||
+            `https://dd.dexscreener.com/ds-data/tokens/solana/${p.tokenAddress}.png`,
           description: p.description || "",
           marketCap: pair.marketCap ?? pair.fdv ?? null,
           change24h: pair.priceChange?.h24 ?? null,
