@@ -44,9 +44,70 @@ export async function dexPairs(addresses: string[]): Promise<Map<string, any>> {
   return out;
 }
 
-import { PublicKey } from "@solana/web3.js";
+// No @solana/web3.js here: it pulls in a websocket package that can't load in Vercel functions.
+import { sha256 } from "@noble/hashes/sha256";
+import { ed25519 } from "@noble/curves/ed25519";
 
-const METADATA_PROGRAM_ID = new PublicKey("metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s");
+const B58 = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+function b58decode(s: string): Uint8Array {
+  let n = 0n;
+  for (const c of s) {
+    const i = B58.indexOf(c);
+    if (i < 0) throw new Error("bad base58");
+    n = n * 58n + BigInt(i);
+  }
+  const bytes: number[] = [];
+  while (n > 0n) {
+    bytes.unshift(Number(n & 0xffn));
+    n >>= 8n;
+  }
+  for (const c of s) {
+    if (c !== "1") break;
+    bytes.unshift(0);
+  }
+  return Uint8Array.from(bytes);
+}
+function b58encode(b: Uint8Array): string {
+  let n = 0n;
+  for (const x of b) n = (n << 8n) + BigInt(x);
+  let out = "";
+  while (n > 0n) {
+    out = B58[Number(n % 58n)] + out;
+    n /= 58n;
+  }
+  for (const x of b) {
+    if (x !== 0) break;
+    out = "1" + out;
+  }
+  return out;
+}
+const onCurve = (b: Uint8Array) => {
+  try {
+    ed25519.ExtendedPoint.fromHex(b);
+    return true;
+  } catch {
+    return false;
+  }
+};
+/** Same algorithm as PublicKey.findProgramAddressSync. */
+export function findPda(seeds: Uint8Array[], programId: string): string {
+  const prog = b58decode(programId);
+  const tag = new TextEncoder().encode("ProgramDerivedAddress");
+  for (let bump = 255; bump >= 0; bump--) {
+    const parts = [...seeds, Uint8Array.of(bump), prog, tag];
+    const buf = new Uint8Array(parts.reduce((a, p) => a + p.length, 0));
+    let o = 0;
+    for (const p of parts) {
+      buf.set(p, o);
+      o += p.length;
+    }
+    const h = sha256(buf);
+    if (!onCurve(h)) return b58encode(h);
+  }
+  throw new Error("No PDA found");
+}
+
+const METADATA_PROGRAM_ID = "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s";
 
 /** Minimal Metaplex metadata parser: key, update authority, mint, then borsh strings name/symbol/uri. */
 function parseMetadata(buf: Buffer) {
@@ -77,11 +138,8 @@ const httpUrl = (s: unknown) => (typeof s === "string" && /^https?:\/\//i.test(s
 
 /** Reads Metaplex metadata for a mint and the off-chain JSON it points to. */
 export async function onchainMeta(net: Net, mint: string): Promise<OnchainMeta> {
-  const [pda] = PublicKey.findProgramAddressSync(
-    [Buffer.from("metadata"), METADATA_PROGRAM_ID.toBuffer(), new PublicKey(mint).toBuffer()],
-    METADATA_PROGRAM_ID,
-  );
-  const acc = await rpc<any>(net, "getAccountInfo", [pda.toBase58(), { encoding: "base64" }]);
+  const pda = findPda([new TextEncoder().encode("metadata"), b58decode(METADATA_PROGRAM_ID), b58decode(mint)], METADATA_PROGRAM_ID);
+  const acc = await rpc<any>(net, "getAccountInfo", [pda, { encoding: "base64" }]);
   if (!acc?.value) return {};
   const md = parseMetadata(Buffer.from(acc.value.data[0], "base64"));
   const out: OnchainMeta = { name: strip(md.name), symbol: strip(md.symbol), uri: strip(md.uri) };
