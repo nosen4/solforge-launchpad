@@ -3,8 +3,8 @@
 // a large-enough SOL transfer, and returns the promotions that are currently running.
 // No database: the blockchain is the record of who paid for what.
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { ActivePromo, MAX_BANNERS, decodeMemo, tierById } from "../shared/promo";
-import { dexPairs, feeWallet, netOf, onchainMeta, rpc } from "./_lib";
+import { ActivePromo, MAX_BANNERS, decodeMemo, tierById } from "../shared/promo.js";
+import { dexPairs, feeWallet, netOf, onchainMeta, rpc } from "./_lib.js";
 
 const LOOKBACK_SEC = 10 * 24 * 3600; // stacked purchases can run for days
 

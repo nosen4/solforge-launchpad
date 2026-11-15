@@ -1,7 +1,7 @@
 // GET /api/token?mint=<address>&net=mainnet|devnet
 // Everything the public token page needs: on-chain metadata, market data and socials.
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { dexPairs, isAddress, netOf, onchainMeta, rpc } from "./_lib";
+import { dexPairs, isAddress, netOf, onchainMeta, rpc } from "./_lib.js";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const net = netOf(req.query.net);

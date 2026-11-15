@@ -1,5 +1,5 @@
 // Helpers for /api functions (files starting with "_" are not routes on Vercel).
-import { FEE_WALLET_DEFAULT, rpcUrl } from "../shared/promo";
+import { FEE_WALLET_DEFAULT, rpcUrl } from "../shared/promo.js";
 
 export type Net = "mainnet" | "devnet";
 
@@ -45,7 +45,21 @@ export async function dexPairs(addresses: string[]): Promise<Map<string, any>> {
 }
 
 import { PublicKey } from "@solana/web3.js";
-import { Metadata, PROGRAM_ID as METADATA_PROGRAM_ID } from "@metaplex-foundation/mpl-token-metadata";
+
+const METADATA_PROGRAM_ID = new PublicKey("metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s");
+
+/** Minimal Metaplex metadata parser: key, update authority, mint, then borsh strings name/symbol/uri. */
+function parseMetadata(buf: Buffer) {
+  let o = 1 + 32 + 32;
+  const str = () => {
+    const len = buf.readUInt32LE(o);
+    o += 4;
+    const v = buf.subarray(o, o + len).toString("utf8");
+    o += len;
+    return v;
+  };
+  return { name: str(), symbol: str(), uri: str() };
+}
 
 export interface OnchainMeta {
   name?: string;
@@ -69,8 +83,8 @@ export async function onchainMeta(net: Net, mint: string): Promise<OnchainMeta> 
   );
   const acc = await rpc<any>(net, "getAccountInfo", [pda.toBase58(), { encoding: "base64" }]);
   if (!acc?.value) return {};
-  const [md] = Metadata.deserialize(Buffer.from(acc.value.data[0], "base64"));
-  const out: OnchainMeta = { name: strip(md.data.name), symbol: strip(md.data.symbol), uri: strip(md.data.uri) };
+  const md = parseMetadata(Buffer.from(acc.value.data[0], "base64"));
+  const out: OnchainMeta = { name: strip(md.name), symbol: strip(md.symbol), uri: strip(md.uri) };
   if (httpUrl(out.uri)) {
     try {
       const ctrl = new AbortController();
