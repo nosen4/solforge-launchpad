@@ -17,7 +17,7 @@ interface Paid {
 }
 
 async function verifiedPayments(net: "mainnet" | "devnet", wallet: string): Promise<Paid[]> {
-  const sigs = await rpc<any[]>(net, "getSignaturesForAddress", [wallet, { limit: 1000 }]);
+  const sigs = await rpc<any[]>(net, "getSignaturesForAddress", [wallet, { limit: 500 }]);
   const now = Date.now() / 1000;
   const candidates = sigs
     .filter((s) => !s.err && s.blockTime && now - s.blockTime < LOOKBACK_SEC)
@@ -25,8 +25,10 @@ async function verifiedPayments(net: "mainnet" | "devnet", wallet: string): Prom
     .filter((x) => x.memo)
     .slice(0, 150);
 
-  const results = await Promise.all(
-    candidates.map(async ({ s, memo }) => {
+  const results: (Paid | null)[] = [];
+  for (let i = 0; i < candidates.length; i += 10) {
+    const batch = await Promise.all(
+    candidates.slice(i, i + 10).map(async ({ s, memo }): Promise<Paid | null> => {
       const tier = tierById(memo!.tier)!;
       try {
         const tx = await rpc<any>(net, "getTransaction", [
@@ -44,7 +46,9 @@ async function verifiedPayments(net: "mainnet" | "devnet", wallet: string): Prom
         return null;
       }
     }),
-  );
+    );
+    results.push(...batch);
+  }
   return (results.filter(Boolean) as Paid[]).sort((a, b) => a.time - b.time);
 }
 

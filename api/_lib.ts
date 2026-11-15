@@ -10,15 +10,38 @@ export const serverRpc = (net: Net) =>
 
 export const feeWallet = () => (process.env.VITE_FEE_WALLET || FEE_WALLET_DEFAULT).trim();
 
-export async function rpc<T = any>(net: Net, method: string, params: unknown[]): Promise<T> {
-  const r = await fetch(serverRpc(net), {
+const PUBLIC_RPC: Record<Net, string> = {
+  mainnet: "https://api.mainnet-beta.solana.com",
+  devnet: "https://api.devnet.solana.com",
+};
+
+async function call(url: string, method: string, params: unknown[]) {
+  const r = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
   });
-  const j = await r.json();
+  const text = await r.text();
+  let j: any;
+  try {
+    j = JSON.parse(text);
+  } catch {
+    throw new Error(`RPC ${r.status}: ${text.slice(0, 80)}`);
+  }
   if (j.error) throw new Error(j.error.message || "RPC error");
-  return j.result as T;
+  return j.result;
+}
+
+/** Calls your configured RPC; if it refuses (quota, rate limit, outage) retries on the public RPC. */
+export async function rpc<T = any>(net: Net, method: string, params: unknown[]): Promise<T> {
+  const primary = serverRpc(net);
+  try {
+    return (await call(primary, method, params)) as T;
+  } catch (e) {
+    if (primary === PUBLIC_RPC[net]) throw e;
+    console.warn(`[rpc] ${method} failed on primary, using public RPC:`, (e as Error).message);
+    return (await call(PUBLIC_RPC[net], method, params)) as T;
+  }
 }
 
 const BASE58 = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
