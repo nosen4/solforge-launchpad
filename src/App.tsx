@@ -8,16 +8,22 @@ import CreatePool from "./components/CreatePool";
 import ManageLiquidity from "./components/ManageLiquidity";
 import Trending from "./components/Trending";
 import Faq from "./components/Faq";
+import Promote, { PromoBanner } from "./components/Promote";
+import TokenPage from "./components/TokenPage";
 
 const NetCtx = createContext<{ net: Network; setNet: (n: Network) => void }>({ net: "mainnet", setNet: () => {} });
 export const useNetwork = () => useContext(NetCtx);
 
-export type Route = "create" | "pool" | "liquidity" | "trending";
+export type Route = "create" | "pool" | "liquidity" | "trending" | "promote" | "token";
+const ROUTES: Route[] = ["create", "pool", "liquidity", "trending", "promote"];
 
 export function useRoute(): [Route, URLSearchParams] {
   const read = () => {
+    // Shareable token pages live at a real path: /t/<mint>
+    const tm = window.location.pathname.match(/^\/t\/([1-9A-HJ-NP-Za-km-z]{32,44})\/?$/);
+    if (tm && !window.location.hash) return ["token", new URLSearchParams({ mint: tm[1] })] as [Route, URLSearchParams];
     const [path, qs] = window.location.hash.replace(/^#\/?/, "").split("?");
-    const r = (["create", "pool", "liquidity", "trending"].includes(path) ? path : "create") as Route;
+    const r = (ROUTES.includes(path as Route) ? path : "create") as Route;
     return [r, new URLSearchParams(qs || "")] as [Route, URLSearchParams];
   };
   const [state, setState] = useState(read);
@@ -34,14 +40,16 @@ export function useRoute(): [Route, URLSearchParams] {
 
 export const go = (r: Route, params?: Record<string, string>) => {
   const qs = params ? "?" + new URLSearchParams(params).toString() : "";
-  window.location.hash = `/${r}${qs}`;
+  if (window.location.pathname !== "/") window.location.href = `/#/${r}${qs}`;
+  else window.location.hash = `/${r}${qs}`;
 };
 
 const NAV: { r: Route; label: string; tag?: string }[] = [
   { r: "create", label: "Create Token" },
   { r: "pool", label: "Raydium Pool" },
   { r: "liquidity", label: "Manage Liquidity" },
-  { r: "trending", label: "Trending", tag: "NEW" },
+  { r: "trending", label: "Trending" },
+  { r: "promote", label: "Promote", tag: "NEW" },
 ];
 
 function Shell() {
@@ -50,12 +58,12 @@ function Shell() {
   return (
     <>
       <header className="hdr">
-        <a className="logo" href="#/create">
+        <a className="logo" href="/#/create">
           <span className="logo-mark">▲</span> {SITE_NAME}
         </a>
         <nav>
           {NAV.map((n) => (
-            <a key={n.r} href={`#/${n.r}`} className={route === n.r ? "on" : ""}>
+            <a key={n.r} href={`/#/${n.r}`} className={route === n.r ? "on" : ""}>
               {n.label}
               {n.tag && <em>{n.tag}</em>}
             </a>
@@ -71,13 +79,16 @@ function Shell() {
       </header>
 
       {net === "devnet" && <div className="banner">Devnet mode — tokens and pools here have no real value. Great for testing.</div>}
+      <PromoBanner />
 
       <main>
         {route === "create" && <CreateToken />}
         {route === "pool" && <CreatePool initialMint={params.get("mint") || ""} />}
         {route === "liquidity" && <ManageLiquidity initialPool={params.get("pool") || ""} />}
         {route === "trending" && <Trending />}
-        <Faq />
+        {route === "promote" && <Promote initialMint={params.get("mint") || ""} />}
+        {route === "token" && <TokenPage mint={params.get("mint")!} />}
+        {route !== "token" && <Faq />}
       </main>
 
       <footer className="ftr">

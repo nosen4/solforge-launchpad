@@ -122,8 +122,14 @@ export default function CreateToken() {
           <button className="btn primary" onClick={() => go("pool", { mint: result.mint })}>
             Create Raydium pool →
           </button>
+          <a className="btn ghost" href={`/t/${result.mint}`} target="_blank" rel="noreferrer">
+            Token page ↗
+          </a>
+          <button className="btn ghost" onClick={() => go("promote", { mint: result.mint })}>
+            Promote
+          </button>
           <a className="btn ghost" href={explorerAddr(result.mint, net)} target="_blank" rel="noreferrer">
-            View on Solscan
+            Solscan ↗
           </a>
         </div>
         <button className="link" onClick={() => { setResult(null); setStep(0); }}>

@@ -28,6 +28,14 @@ const QA: [string, string][] = [
     "LP tokens are your claim on the pool. Burning them locks the liquidity forever — nobody, including you, can withdraw it. It's irreversible.",
   ],
   [
+    "How does promotion work?",
+    `Pay in SOL on the Promote page and your token is pinned at the top of ${SITE_NAME}'s Trending page and Promote board for the time you choose; the banner package also shows it across every page. Placement is on ${SITE_NAME} only. DexScreener, DexTools and others sell their own boosts directly.`,
+  ],
+  [
+    "What is the free token page?",
+    "Every Solana token automatically gets a shareable page at /t/<token address> with its logo, description, socials, live chart, safety checks and buy buttons. Nothing to set up.",
+  ],
+  [
     "Can I test first?",
     "Yes — switch the network selector to Devnet, grab free SOL from faucet.solana.com, and run through the whole flow without real money.",
   ],

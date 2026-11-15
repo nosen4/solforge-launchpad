@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { go } from "../App";
 import { TEMPLATE_KEY, Template } from "./CreateToken";
+import { FeaturedStrip } from "./Promote";
 
 interface T {
   address: string;
@@ -64,6 +65,8 @@ export default function Trending() {
           with your own name, ticker and art.
         </p>
       </section>
+
+      <FeaturedStrip />
 
       <div className="tabs">
         <button className={tab === "trending" ? "on" : ""} onClick={() => setTab("trending")}>🔥 Trending</button>

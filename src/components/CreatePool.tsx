@@ -81,6 +81,7 @@ export default function CreatePool({ initialMint }: { initialMint: string }) {
             <a className="btn primary" href={raydiumPoolUrl(result.poolId)} target="_blank" rel="noreferrer">Open on Raydium ↗</a>
           )}
           <button className="btn ghost" onClick={() => go("liquidity", { pool: result.poolId })}>Manage liquidity</button>
+          <button className="btn ghost" onClick={() => go("promote", { mint })}>Promote token</button>
         </div>
         <p className="muted small">Raydium's UI and DexScreener can take 10–15 minutes to index a new pool.</p>
       </section>
