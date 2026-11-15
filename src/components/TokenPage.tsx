@@ -5,7 +5,9 @@ import { TokenInfo, fetchToken, usd, usePromotions } from "../lib/promo";
 import { Copy } from "./ui";
 
 export default function TokenPage({ mint }: { mint: string }) {
-  const { net } = useNetwork();
+  const { net: selectedNet } = useNetwork();
+  // Shared links can be opened by anyone: show the token on whichever network it actually exists.
+  const [net, setTokenNet] = useState(selectedNet);
   const [t, setT] = useState<TokenInfo | null>(null);
   const [error, setError] = useState("");
   const { data: promos } = usePromotions(net);
@@ -15,13 +17,20 @@ export default function TokenPage({ mint }: { mint: string }) {
     let dead = false;
     setT(null);
     setError("");
-    fetchToken(mint, net)
-      .then((d) => !dead && setT(d))
-      .catch((e) => !dead && setError(e.message));
+    const other = selectedNet === "mainnet" ? "devnet" : "mainnet";
+    fetchToken(mint, selectedNet)
+      .then((d) => [d, selectedNet] as const)
+      .catch(() => fetchToken(mint, other).then((d) => [d, other] as const))
+      .then(([d, n]) => {
+        if (dead) return;
+        setTokenNet(n);
+        setT(d);
+      })
+      .catch(() => !dead && setError("This token wasn't found on Solana mainnet or devnet"));
     return () => {
       dead = true;
     };
-  }, [mint, net]);
+  }, [mint, selectedNet]);
 
   useEffect(() => {
     if (t) document.title = `${t.name} ($${t.symbol}) · SolForge`;
@@ -34,7 +43,7 @@ export default function TokenPage({ mint }: { mint: string }) {
     return (
       <section className="card hero-card" style={{ marginTop: 48 }}>
         <h2>Token not found</h2>
-        <p className="muted">{error}. Check the address, or switch network in the header.</p>
+        <p className="muted">{error}. Check the address and try again.</p>
       </section>
     );
   if (!t) return <section className="card hero-card skel" style={{ marginTop: 48, height: 420 }} />;
