@@ -11,7 +11,7 @@ export const serverRpc = (net: Net) =>
 export const feeWallet = () => (process.env.VITE_FEE_WALLET || FEE_WALLET_DEFAULT).trim();
 
 const PUBLIC_RPC: Record<Net, string> = {
-  mainnet: "https://api.mainnet-beta.solana.com",
+  mainnet: "https://solana-rpc.publicnode.com",
   devnet: "https://api.devnet.solana.com",
 };
 

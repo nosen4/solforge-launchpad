@@ -67,7 +67,7 @@ export interface ActivePromo {
 
 export const rpcUrl = (v: string | undefined, cluster: "mainnet" | "devnet") => {
   const s = (v || "").trim();
-  if (!s) return cluster === "mainnet" ? "https://api.mainnet-beta.solana.com" : "https://api.devnet.solana.com";
+  if (!s) return cluster === "mainnet" ? "https://solana-rpc.publicnode.com" : "https://api.devnet.solana.com";
   if (/^https?:\/\//i.test(s)) return s;
   return `https://${cluster}.helius-rpc.com/?api-key=${encodeURIComponent(s)}`;
 };

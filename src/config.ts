@@ -14,7 +14,7 @@ const rpc = (v: string | undefined, cluster: "mainnet" | "devnet", fallback: str
 
 export const RPC_URLS: Record<Network, string> = {
   // Use a paid RPC (Helius, QuickNode, Triton…) for mainnet — the public one rate-limits hard.
-  mainnet: rpc(env.VITE_RPC_MAINNET, "mainnet", "https://api.mainnet-beta.solana.com"),
+  mainnet: rpc(env.VITE_RPC_MAINNET, "mainnet", "https://solana-rpc.publicnode.com"),
   devnet: rpc(env.VITE_RPC_DEVNET, "devnet", "https://api.devnet.solana.com"),
 };
 
@@ -50,7 +50,7 @@ export const raydiumPoolUrl = (poolId: string) =>
   `https://raydium.io/liquidity/increase/?mode=add&pool_id=${poolId}`;
 
 export const PUBLIC_RPC: Record<Network, string> = {
-  mainnet: "https://api.mainnet-beta.solana.com",
+  mainnet: "https://solana-rpc.publicnode.com",
   devnet: "https://api.devnet.solana.com",
 };
 
