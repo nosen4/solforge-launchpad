@@ -25,6 +25,7 @@ import type { WalletContextState } from "@solana/wallet-adapter-react";
 import BN from "bn.js";
 import { FEE_WALLET, FEES, Network } from "../config";
 import { toBaseUnits } from "./token";
+import { confirmSig } from "./confirm";
 
 export const WSOL_MINT = "So11111111111111111111111111111111111111112";
 
@@ -61,7 +62,7 @@ export async function getFeeTiers(raydium: Raydium, net: Network): Promise<ApiCp
 }
 
 async function payPlatformFee(connection: Connection, wallet: WalletContextState, sol: number) {
-  if (!FEE_WALLET || sol <= 0 || !wallet.publicKey) return;
+  if (!FEE_WALLET || sol <= 0 || !wallet.publicKey || FEE_WALLET.equals(wallet.publicKey)) return;
   const tx = new Transaction().add(
     SystemProgram.transfer({
       fromPubkey: wallet.publicKey,
@@ -69,8 +70,11 @@ async function payPlatformFee(connection: Connection, wallet: WalletContextState
       lamports: Math.round(sol * LAMPORTS_PER_SOL),
     }),
   );
+  const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
+  tx.recentBlockhash = blockhash;
+  tx.feePayer = wallet.publicKey;
   const sig = await wallet.sendTransaction(tx, connection);
-  await connection.confirmTransaction(sig, "confirmed");
+  await confirmSig(connection, sig, lastValidBlockHeight);
 }
 
 export interface CreatePoolInput {
@@ -123,7 +127,8 @@ export async function createPool(
     computeBudgetConfig: { units: 600_000, microLamports: 100_000 },
   });
 
-  const { txId } = await execute({ sendAndConfirm: true });
+  const { txId } = await execute({ sendAndConfirm: false });
+  await confirmSig(connection, txId);
   return {
     signature: txId,
     poolId: extInfo.address.poolId.toBase58(),
@@ -174,7 +179,8 @@ export async function removeLiquidity(
     closeWsol: true,
     computeBudgetConfig: { units: 400_000, microLamports: 100_000 },
   });
-  const { txId } = await execute({ sendAndConfirm: true });
+  const { txId } = await execute({ sendAndConfirm: false });
+  await confirmSig(connection, txId);
   return txId;
 }
 
@@ -194,6 +200,6 @@ export async function burnLp(
     createBurnCheckedInstruction(ata, lpMint, owner, BigInt(lpBalance.toString()), lpDecimals),
   );
   const sig = await wallet.sendTransaction(tx, connection);
-  await connection.confirmTransaction(sig, "confirmed");
+  await confirmSig(connection, sig);
   return sig;
 }

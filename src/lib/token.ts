@@ -24,6 +24,7 @@ import {
 } from "@metaplex-foundation/mpl-token-metadata";
 import type { WalletContextState } from "@solana/wallet-adapter-react";
 import { FEE_WALLET, FEES } from "../config";
+import { confirmSig } from "./confirm";
 
 export interface CreateTokenInput {
   name: string;
@@ -112,7 +113,7 @@ export async function createToken(
   if (input.revokeFreeze) tx.add(createSetAuthorityInstruction(mint, owner, AuthorityType.FreezeAccount, null));
 
   const fee = totalFee(input);
-  if (FEE_WALLET && fee > 0) {
+  if (FEE_WALLET && fee > 0 && !FEE_WALLET.equals(owner)) {
     tx.add(
       SystemProgram.transfer({
         fromPubkey: owner,
@@ -127,6 +128,6 @@ export async function createToken(
   tx.feePayer = owner;
 
   const signature = await wallet.sendTransaction(tx, connection, { signers: [mintKp] });
-  await connection.confirmTransaction({ signature, blockhash, lastValidBlockHeight }, "confirmed");
+  await confirmSig(connection, signature, lastValidBlockHeight);
   return { mint, signature };
 }

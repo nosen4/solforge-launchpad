@@ -10,6 +10,7 @@ import {
 } from "@solana/web3.js";
 import type { WalletContextState } from "@solana/wallet-adapter-react";
 import { FEE_WALLET, Network } from "../config";
+import { confirmSig } from "./confirm";
 import {
   ActivePromo,
   FEE_WALLET_DEFAULT,
@@ -54,7 +55,7 @@ export async function payForPromotion(
   tx.recentBlockhash = blockhash;
   tx.feePayer = owner;
   const signature = await wallet.sendTransaction(tx, connection);
-  await connection.confirmTransaction({ signature, blockhash, lastValidBlockHeight }, "confirmed");
+  await confirmSig(connection, signature, lastValidBlockHeight);
   return signature;
 }
 
