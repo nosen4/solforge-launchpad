@@ -17,6 +17,23 @@ const BACKUP_RPCS: Record<Net, string[]> = {
   devnet: ["https://api.devnet.solana.com"],
 };
 
+async function call(url: string, method: string, params: unknown[]) {
+  const r = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
+  });
+  const text = await r.text();
+  let j: any;
+  try {
+    j = JSON.parse(text);
+  } catch {
+    throw new Error(`RPC ${r.status}: ${text.slice(0, 80)}`);
+  }
+  if (j.error) throw new Error(j.error.message || "RPC error");
+  return j.result;
+}
+
 /** Calls your configured RPC; if it refuses (quota, rate limit, outage) tries the backups in turn. */
 export async function rpc<T = any>(net: Net, method: string, params: unknown[]): Promise<T> {
   const urls = [serverRpc(net), ...BACKUP_RPCS[net].filter((u) => u !== serverRpc(net))];
@@ -30,7 +47,6 @@ export async function rpc<T = any>(net: Net, method: string, params: unknown[]):
     }
   }
   throw last;
-}
 }
 
 const BASE58 = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
