@@ -44,6 +44,19 @@ export default function CreateToken() {
   const [result, setResult] = useState<{ mint: string; sig: string } | null>(null);
   const [template, setTemplate] = useState<Template | null>(null);
 
+  // Prefill from a link: /#/create?name=…&symbol=…&uri=…&supply=…&decimals=…
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.hash.split("?")[1] || "");
+    if (q.get("name")) setName(q.get("name")!.slice(0, 32));
+    if (q.get("symbol")) setSymbol(q.get("symbol")!.toUpperCase().slice(0, 10));
+    if (q.get("supply") && /^\d+$/.test(q.get("supply")!)) setSupply(q.get("supply")!);
+    if (q.get("decimals") && /^\d$/.test(q.get("decimals")!)) setDecimals(Number(q.get("decimals")));
+    if (q.get("uri") && /^https:\/\//.test(q.get("uri")!)) {
+      setUseManual(true);
+      setManualUri(q.get("uri")!);
+    }
+  }, []);
+
   // Prefill from Trending → "Use as template"
   useEffect(() => {
     try {

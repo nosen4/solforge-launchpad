@@ -55,6 +55,11 @@ const NAV: { r: Route; label: string; tag?: string }[] = [
 function Shell() {
   const [route, params] = useRoute();
   const { net, setNet } = useNetwork();
+  // A link can pin the network: ?net=mainnet|devnet
+  const linkNet = params.get("net");
+  useEffect(() => {
+    if ((linkNet === "mainnet" || linkNet === "devnet") && linkNet !== net) setNet(linkNet);
+  }, [linkNet]);
   return (
     <>
       <header className="hdr">
@@ -83,7 +88,13 @@ function Shell() {
 
       <main>
         {route === "create" && <CreateToken />}
-        {route === "pool" && <CreatePool initialMint={params.get("mint") || ""} />}
+        {route === "pool" && (
+          <CreatePool
+            initialMint={params.get("mint") || ""}
+            initialTokens={params.get("tokens") || ""}
+            initialSol={params.get("sol") || ""}
+          />
+        )}
         {route === "liquidity" && <ManageLiquidity initialPool={params.get("pool") || ""} />}
         {route === "trending" && <Trending />}
         {route === "promote" && <Promote initialMint={params.get("mint") || ""} />}

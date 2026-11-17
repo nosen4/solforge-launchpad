@@ -12,17 +12,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const gateway = process.env.PINATA_GATEWAY || "gateway.pinata.cloud";
 
   try {
-    const { name, symbol, description, website, twitter, telegram, imageName, imageType, imageBase64 } =
-      req.body ?? {};
-    if (!name || !symbol || !imageBase64) return res.status(400).json({ error: "name, symbol and image required" });
-    if (!ALLOWED.includes(imageType)) return res.status(400).json({ error: "Image must be PNG, JPG, GIF or WEBP" });
+    const { name, symbol, description, website, twitter, telegram, imageName, imageUrl, imageBase64 } = req.body ?? {};
+    let { imageType } = req.body ?? {};
+    if (!name || !symbol || !(imageBase64 || imageUrl))
+      return res.status(400).json({ error: "name, symbol and image required" });
 
-    const bytes = Buffer.from(imageBase64, "base64");
+    let bytes: Buffer;
+    if (imageUrl) {
+      // Fetch the image server-side from a public https URL (e.g. the project's own website).
+      if (!/^https:\/\/[^/]+\.[^/]+\//.test(imageUrl)) return res.status(400).json({ error: "imageUrl must be a public https URL" });
+      const ir = await fetch(imageUrl, { redirect: "follow" });
+      if (!ir.ok) return res.status(400).json({ error: `Couldn't fetch image (${ir.status})` });
+      imageType = (ir.headers.get("content-type") || "").split(";")[0].trim();
+      bytes = Buffer.from(await ir.arrayBuffer());
+    } else {
+      bytes = Buffer.from(imageBase64, "base64");
+    }
+    if (!ALLOWED.includes(imageType)) return res.status(400).json({ error: "Image must be PNG, JPG, GIF or WEBP" });
     if (bytes.length > MAX_IMAGE_BYTES) return res.status(400).json({ error: "Image must be under 3 MB" });
 
     // 1) image
     const form = new FormData();
-    form.append("file", new Blob([bytes], { type: imageType }), imageName || "image.png");
+    form.append("file", new Blob([new Uint8Array(bytes)], { type: imageType }), imageName || "image.png");
     form.append("pinataMetadata", JSON.stringify({ name: `${symbol}-image` }));
     const imgRes = await fetch("https://api.pinata.cloud/pinning/pinFileToIPFS", {
       method: "POST",

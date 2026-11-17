@@ -7,15 +7,23 @@ import { createPool, getFeeTiers, initRaydium } from "../lib/raydium";
 import { go, useNetwork } from "../App";
 import { Copy, Field, Status, StatusLine, TxLink, errMsg } from "./ui";
 
-export default function CreatePool({ initialMint }: { initialMint: string }) {
+export default function CreatePool({
+  initialMint,
+  initialTokens = "",
+  initialSol = "",
+}: {
+  initialMint: string;
+  initialTokens?: string;
+  initialSol?: string;
+}) {
   const { connection } = useConnection();
   const wallet = useWallet();
   const { setVisible } = useWalletModal();
   const { net } = useNetwork();
 
   const [mint, setMint] = useState(initialMint);
-  const [tokenAmount, setTokenAmount] = useState("");
-  const [solAmount, setSolAmount] = useState("");
+  const [tokenAmount, setTokenAmount] = useState(initialTokens.replace(/[^\d.]/g, ""));
+  const [solAmount, setSolAmount] = useState(initialSol.replace(/[^\d.]/g, ""));
   const [tiers, setTiers] = useState<ApiCpmmConfigInfo[]>([]);
   const [tier, setTier] = useState("");
   const [startNow, setStartNow] = useState(true);
