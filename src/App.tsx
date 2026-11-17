@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { ConnectionProvider, WalletProvider } from "@solana/wallet-adapter-react";
 import { WalletModalProvider, WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { PhantomWalletAdapter, SolflareWalletAdapter } from "@solana/wallet-adapter-wallets";
-import { Network, RPC_URLS, SITE_NAME } from "./config";
+import { Network, RPC_URLS, SITE_NAME, fallbackFetch } from "./config";
 import CreateToken from "./components/CreateToken";
 import CreatePool from "./components/CreatePool";
 import ManageLiquidity from "./components/ManageLiquidity";
@@ -125,7 +125,7 @@ export default function App() {
   const wallets = useMemo(() => [new PhantomWalletAdapter(), new SolflareWalletAdapter()], []);
   return (
     <NetCtx.Provider value={{ net, setNet }}>
-      <ConnectionProvider endpoint={RPC_URLS[net]} key={net}>
+      <ConnectionProvider endpoint={RPC_URLS[net]} config={{ commitment: "confirmed", fetch: fallbackFetch(net) as any }} key={net}>
         <WalletProvider wallets={wallets} autoConnect>
           <WalletModalProvider>
             <Shell />

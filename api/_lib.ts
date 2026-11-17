@@ -169,7 +169,7 @@ export async function onchainMeta(net: Net, mint: string): Promise<OnchainMeta> 
   if (httpUrl(out.uri)) {
     try {
       const ctrl = new AbortController();
-      const t = setTimeout(() => ctrl.abort(), 4000);
+      const t = setTimeout(() => ctrl.abort(), 8000);
       const j = await (await fetch(out.uri!, { signal: ctrl.signal })).json();
       clearTimeout(t);
       out.image = httpUrl(j.image);

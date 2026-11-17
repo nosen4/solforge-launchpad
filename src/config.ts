@@ -48,3 +48,32 @@ export const explorerAddr = (a: string, net: Network) =>
   `https://solscan.io/account/${a}${net === "devnet" ? "?cluster=devnet" : ""}`;
 export const raydiumPoolUrl = (poolId: string) =>
   `https://raydium.io/liquidity/increase/?mode=add&pool_id=${poolId}`;
+
+export const PUBLIC_RPC: Record<Network, string> = {
+  mainnet: "https://api.mainnet-beta.solana.com",
+  devnet: "https://api.devnet.solana.com",
+};
+
+/**
+ * fetch used by every Solana connection: if your RPC provider refuses a request
+ * (quota used up, rate limit, outage), the same request is retried on the public RPC.
+ */
+export const fallbackFetch =
+  (net: Network) =>
+  async (input: any, init?: any): Promise<Response> => {
+    const url = typeof input === "string" ? input : input?.url;
+    const usePublic = () => fetch(PUBLIC_RPC[net], init);
+    if (url === PUBLIC_RPC[net]) return fetch(input, init);
+    try {
+      const res = await fetch(input, init);
+      if (res.status === 429 || res.status === 401 || res.status === 403 || res.status >= 500) {
+        const peek = await res.clone().text().catch(() => "");
+        console.warn(`[rpc] primary returned ${res.status} (${peek.slice(0, 60)}), using public RPC`);
+        return usePublic();
+      }
+      return res;
+    } catch (e) {
+      console.warn("[rpc] primary unreachable, using public RPC", e);
+      return usePublic();
+    }
+  };
