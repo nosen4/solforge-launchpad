@@ -12,10 +12,20 @@ const rpc = (v: string | undefined, cluster: "mainnet" | "devnet", fallback: str
   return `https://${cluster}.helius-rpc.com/?api-key=${encodeURIComponent(s)}`;
 };
 
-export const RPC_URLS: Record<Network, string> = {
+// The browser talks to our own /api/rpc proxy, which picks a working RPC server-side
+// (your provider first, then public fallbacks). Direct URLs below are the proxy's last resort.
+const proxy = (net: Network) =>
+  typeof window !== "undefined" ? `${window.location.origin}/api/rpc?net=${net}` : "";
+
+export const DIRECT_RPC_URLS: Record<Network, string> = {
   // Use a paid RPC (Helius, QuickNode, Triton…) for mainnet — the public one rate-limits hard.
   mainnet: rpc(env.VITE_RPC_MAINNET, "mainnet", "https://solana-rpc.publicnode.com"),
   devnet: rpc(env.VITE_RPC_DEVNET, "devnet", "https://api.devnet.solana.com"),
+};
+
+export const RPC_URLS: Record<Network, string> = {
+  mainnet: proxy("mainnet") || DIRECT_RPC_URLS.mainnet,
+  devnet: proxy("devnet") || DIRECT_RPC_URLS.devnet,
 };
 
 /** Wallet that receives your platform fees. Leave empty to charge no fee. */
